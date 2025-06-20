@@ -1,0 +1,136 @@
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Ruleta de Puestos</title>
+  <style>
+    canvas {
+      border: 2px solid #000;
+      display: block;
+      margin: 20px auto;
+    }
+    button {
+      display: block;
+      margin: 10px auto;
+      font-size: 20px;
+      padding: 10px 20px;
+    }
+    #currentResult {
+      text-align: center;
+      font-size: 22px;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    #results {
+      text-align: center;
+      font-family: Arial;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="wheelCanvas" width="500" height="500"></canvas>
+<button onclick="spinWheel()">Girar Ruleta</button>
+<div id="currentResult"></div>
+<div id="results"></div>
+
+<script>
+  const canvas = document.getElementById("wheelCanvas");
+  const ctx = canvas.getContext("2d");
+  const totalPuestos = 12;
+  const puestosDisponibles = Array.from({ length: totalPuestos }, (_, i) => `Puesto ${i + 1}`);
+  const names = ["Ana", "Carlos", "Luis", "María", "Pedro", "Laura", "José", "Camila", "Andrés", "Lucía", "Miguel", "Sofía"];
+  const results = [];
+
+  const radius = 250;
+  let angle = 0;
+  let spinning = false;
+  let currentIndex = 0;
+
+  function drawWheel(labels) {
+    const angleStep = (2 * Math.PI) / labels.length;
+    for (let i = 0; i < labels.length; i++) {
+      const startAngle = i * angleStep + angle;
+      const endAngle = startAngle + angleStep;
+      ctx.beginPath();
+      ctx.moveTo(250, 250);
+      ctx.arc(250, 250, radius, startAngle, endAngle);
+      ctx.fillStyle = i % 2 === 0 ? "#FF6384" : "#36A2EB";
+      ctx.fill();
+      ctx.stroke();
+
+      // Texto
+      ctx.save();
+      ctx.translate(250, 250);
+      ctx.rotate(startAngle + angleStep / 2);
+      ctx.textAlign = "right";
+      ctx.fillStyle = "#fff";
+      ctx.font = "16px Arial";
+      ctx.fillText(labels[i], radius - 10, 0);
+      ctx.restore();
+    }
+
+    // Puntero
+    ctx.beginPath();
+    ctx.moveTo(250, 0);
+    ctx.lineTo(240, 20);
+    ctx.lineTo(260, 20);
+    ctx.fillStyle = "black";
+    ctx.fill();
+  }
+
+  function spinWheel() {
+    if (spinning || currentIndex >= names.length) return;
+    spinning = true;
+
+    const currentName = names[currentIndex];
+    const labels = [...puestosDisponibles];
+    drawWheel(labels);
+
+    const spinTime = 4000;
+    const spinAngle = Math.random() * 360 + 720;
+    const target = angle + (spinAngle * Math.PI / 180);
+    const start = Date.now();
+
+    function animate() {
+      const now = Date.now();
+      const elapsed = now - start;
+      if (elapsed < spinTime) {
+        angle += (target - angle) * 0.05;
+        ctx.clearRect(0, 0, 500, 500);
+        drawWheel(labels);
+        requestAnimationFrame(animate);
+      } else {
+        angle = target % (2 * Math.PI);
+        const index = totalPuestos - Math.floor((angle * puestosDisponibles.length) / (2 * Math.PI)) % puestosDisponibles.length;
+        const chosen = puestosDisponibles.splice(index % puestosDisponibles.length, 1)[0];
+
+        results.push({ nombre: currentName, puesto: chosen });
+        currentIndex++;
+        showResults();
+
+        // Mostrar resultado actual
+        const currentResultDiv = document.getElementById("currentResult");
+        currentResultDiv.innerHTML = `<strong>${currentName}</strong> obtuvo el <strong>${chosen}</strong>`;
+
+        spinning = false;
+
+        if (currentIndex === names.length) {
+          alert("¡Sorteo finalizado!");
+        }
+      }
+    }
+
+    animate();
+  }
+
+  function showResults() {
+    const resultDiv = document.getElementById("results");
+    resultDiv.innerHTML = "<h2>Resultados acumulados</h2>" + results.map(r => `${r.nombre} → ${r.puesto}`).join("<br>");
+  }
+
+  drawWheel(puestosDisponibles);
+</script>
+
+</body>
+</html>
